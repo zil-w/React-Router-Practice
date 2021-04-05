@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Switch, Link, Route, useRouteMatch, useHistory } from 'react-router-dom'//it's dom for some reason
 
 const Menu = () => {
   const padding = {
@@ -6,9 +7,9 @@ const Menu = () => {
   }
   return (
     <div>
-      <a href='#' style={padding}>anecdotes</a>
-      <a href='#' style={padding}>create new</a>
-      <a href='#' style={padding}>about</a>
+      <Link style={padding} to='/anecdotes'>anecdotes</Link>
+      <Link style={padding} to='/createNew'>create new</Link>
+      <Link style={padding} to='/about'>about</Link>
     </div>
   )
 }
@@ -17,7 +18,7 @@ const AnecdoteList = ({ anecdotes }) => (
   <div>
     <h2>Anecdotes</h2>
     <ul>
-      {anecdotes.map(anecdote => <li key={anecdote.id} >{anecdote.content}</li>)}
+      {anecdotes.map(anecdote => <li key={anecdote.id} > <Link to={`/anecdotes/${anecdote.id}`}>{anecdote.content}</Link></li>)}
     </ul>
   </div>
 )
@@ -28,8 +29,8 @@ const About = () => (
     <p>According to Wikipedia:</p>
 
     <em>An anecdote is a brief, revealing account of an individual person or an incident.
-      Occasionally humorous, anecdotes differ from jokes because their primary purpose is not simply to provoke laughter but to reveal a truth more general than the brief tale itself,
-      such as to characterize a person by delineating a specific quirk or trait, to communicate an abstract idea about a person, place, or thing through the concrete details of a short narrative.
+    Occasionally humorous, anecdotes differ from jokes because their primary purpose is not simply to provoke laughter but to reveal a truth more general than the brief tale itself,
+    such as to characterize a person by delineating a specific quirk or trait, to communicate an abstract idea about a person, place, or thing through the concrete details of a short narrative.
       An anecdote is "a story with a point."</em>
 
     <p>Software engineering is full of excellent anecdotes, at this app you can find the best and add more.</p>
@@ -48,7 +49,7 @@ const CreateNew = (props) => {
   const [content, setContent] = useState('')
   const [author, setAuthor] = useState('')
   const [info, setInfo] = useState('')
-
+  const history = useHistory()
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -58,6 +59,8 @@ const CreateNew = (props) => {
       info,
       votes: 0
     })
+    props.notificationHandler(`A new anecdote '${content}' was created!`, 10000)
+    history.push('/anecdotes')
   }
 
   return (
@@ -74,13 +77,45 @@ const CreateNew = (props) => {
         </div>
         <div>
           url for more info
-          <input name='info' value={info} onChange={(e)=> setInfo(e.target.value)} />
+          <input name='info' value={info} onChange={(e) => setInfo(e.target.value)} />
         </div>
         <button>create</button>
       </form>
     </div>
   )
 
+}
+
+const Anecdote = ({ anecdote, voteHandler }) => {
+  if (anecdote) {
+    return (
+      <div>
+        content: {anecdote.content} <br />
+        author: {anecdote.author} <br />
+        info: {anecdote.info} <br />
+        votes: {anecdote.votes} <br />
+        <button onClick={voteHandler}>vote</button>
+      </div>
+    )
+  }
+  else {
+    return (
+      < div >
+        Cannot find an anecdote with this id!
+      </div >
+    )
+  }
+}
+
+const Notification = ({ message }) => {
+  const styling = {
+    border: 'solid',
+    margin: '10px',
+    color: 'green'
+  }
+  return (
+    <div style={styling}>{message}</div>
+  )
 }
 
 const App = () => {
@@ -122,13 +157,38 @@ const App = () => {
     setAnecdotes(anecdotes.map(a => a.id === id ? voted : a))
   }
 
+  const showNotification = (message, lifespan) => {
+    setNotification(message)
+    setTimeout(() => {
+      setNotification('')
+    }, lifespan)
+  }
+
+  const match = useRouteMatch('/anecdotes/:id')
+  const foundAnecdote = (match === null) ? null : anecdoteById(match.params.id)//okay issue was with anecdote ID
+
   return (
     <div>
       <h1>Software anecdotes</h1>
       <Menu />
-      <AnecdoteList anecdotes={anecdotes} />
-      <About />
-      <CreateNew addNew={addNew} />
+      {(notification !== '') && <Notification message={notification} />}
+      <Switch>
+        <Route path='/anecdotes/:id'>
+          <Anecdote anecdote={foundAnecdote} voteHandler={() => vote(foundAnecdote.id)} />
+        </Route>
+        <Route path='/anecdotes'>
+          <AnecdoteList anecdotes={anecdotes} />
+        </Route>
+        <Route path='/about'>
+          <About />
+        </Route>
+        <Route path='/createNew'>
+          <CreateNew addNew={addNew} notificationHandler={showNotification} />
+        </Route>
+        <Route path='/'>
+          <AnecdoteList anecdotes={anecdotes} />
+        </Route>
+      </Switch>
       <Footer />
     </div>
   )

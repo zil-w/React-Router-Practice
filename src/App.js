@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useField } from './hooks'
 import { Switch, Link, Route, useRouteMatch, useHistory } from 'react-router-dom'//it's dom for some reason
 
 const Menu = () => {
@@ -46,22 +47,38 @@ const Footer = () => (
 )
 
 const CreateNew = (props) => {
-  const [content, setContent] = useState('')
-  const [author, setAuthor] = useState('')
-  const [info, setInfo] = useState('')
-  const history = useHistory()
+  // const [content, setContent] = useState('')
+  // const [author, setAuthor] = useState('')
+  // const [info, setInfo] = useState('')
+  // const history = useHistory()
+
+  const content = useField('text')
+  const author = useField('text')
+  const info = useField('text')
+  const history = useHistory('text')
 
   const handleSubmit = (e) => {
     e.preventDefault()
     props.addNew({
-      content,
-      author,
-      info,
+      content: content.value,
+      author: author.value,
+      info: info.value,
       votes: 0
     })
-    props.notificationHandler(`A new anecdote '${content}' was created!`, 10000)
+    props.notificationHandler(`A new anecdote '${content.value}' was created!`, 10000)
     history.push('/anecdotes')
   }
+
+  const handleReset = (e) => {
+    e.preventDefault()
+    content.reset()
+    author.reset()
+    info.reset()
+  }
+
+  const { reset: dummy, ...contentInput } = content //how does this even work?
+  const { reset: dummy1, ...authorInput } = author
+  const { reset: dummy2, ...infoInput } = info
 
   return (
     <div>
@@ -69,17 +86,18 @@ const CreateNew = (props) => {
       <form onSubmit={handleSubmit}>
         <div>
           content
-          <input name='content' value={content} onChange={(e) => setContent(e.target.value)} />
+          <input {...contentInput} />
         </div>
         <div>
           author
-          <input name='author' value={author} onChange={(e) => setAuthor(e.target.value)} />
+          <input {...authorInput} />
         </div>
         <div>
           url for more info
-          <input name='info' value={info} onChange={(e) => setInfo(e.target.value)} />
+          <input {...infoInput} />
         </div>
-        <button>create</button>
+        <button type="submit">create</button>
+        <button type="reset" onClick={handleReset}>reset</button>
       </form>
     </div>
   )
